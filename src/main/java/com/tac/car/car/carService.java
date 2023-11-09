@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementCreator;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
@@ -53,6 +55,16 @@ public class carService {
         }
     }
 
+    public List<AutoRequestDTO> getCarDataByUserId(long user_id) {
+        String sql = "SELECT * FROM car WHERE user_id = ?";
+        try {
+            List<AutoRequestDTO> res = this.jdbcTemplate.query(sql, new BeanPropertyRowMapper<>(AutoRequestDTO.class), user_id);
+            logger.debug("Out: " + res);
+            return res;
+        } catch (EmptyResultDataAccessException e) {
+            return null;
+        }
+    }
 
 
 }
