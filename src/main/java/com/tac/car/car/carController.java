@@ -1,5 +1,8 @@
 package com.tac.car.car;
 
+import com.tac.car.core.AppException;
+import com.tac.car.core.AppResponse;
+import com.tac.car.core.ExceptionUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/car")
@@ -16,30 +20,55 @@ import java.util.List;
 public class carController {
     @Autowired
     private carService autoService;
-    @Operation(summary = "Delete screen_config by Id", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "Register car")
     @PostMapping("/guardar")
-    public ResponseEntity<String> guardarAutoConImagenes(@RequestBody AutoRequestDTO autoRequestDTO) {
+    public ResponseEntity<AppResponse> guardarAutoConImagenes(@RequestBody AutoRequestDTO autoRequestDTO) {
+        AppResponse response = new AppResponse();
         try {
             autoService.insertCar(autoRequestDTO);
-            return new ResponseEntity<>("Auto y sus imágenes guardados exitosamente", HttpStatus.CREATED);
+            response.setResponseCode("success");
+            response.setResponseMessage("Auto y sus imágenes guardados exitosamente");
+            return new ResponseEntity<>(response, HttpStatus.CREATED);
         } catch (Exception e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            response.setResponseCode("error");
+            response.setResponseMessage("Error al guardar el auto: " + e.getMessage());
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     @GetMapping("/user/{user_id}")
-    public ResponseEntity<String> listarCarPorUserId(@PathVariable long user_id) {
+    public AppResponse listarCarPorUserId(@PathVariable long user_id) {
+        AppResponse response = new AppResponse();
         try {
-            List<AutoRequestDTO> cars = autoService.getCarDataByUserId(user_id);
+            List<Map<String, Object>> cars = autoService.getCarDataByUserId(user_id);
             if (cars != null) {
-                return new ResponseEntity<>("Usuario encontrado", HttpStatus.OK);
+                response.setData(cars);
             } else {
-                return new ResponseEntity<>("Usuario no encontrado", HttpStatus.NOT_FOUND);
+                response.setError(true);
+                response.setResponseCode("NOT_FOUND");
+                response.setResponseMessage("Usuario no encontrado");
             }
         } catch (Exception e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            response.setError(true);
+            response.setResponseCode("INTERNAL_SERVER_ERROR");
+            response.setResponseMessage("Error interno del servidor: " + e.getMessage());
         }
+
+        return response;
     }
 
+    @RequestMapping(value = "/updaterCar", method = RequestMethod.PUT)
+    public AppResponse UpdateCustomer(@RequestBody AutoRequestDTO param) throws Exception {
+
+        AppResponse response = new AppResponse();
+        try {
+            autoService.updateCar(param);
+        } catch (Exception e) {
+            response.setError(true);
+            response.setResponseCode("NOT_FOUND");
+            response.setResponseMessage("Auto no actualizado");
+        }
+        return response;
+    }
 
 }

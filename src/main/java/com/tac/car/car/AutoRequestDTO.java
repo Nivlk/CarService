@@ -4,12 +4,16 @@ import java.util.List;
 
 public class AutoRequestDTO {
 
+
+    private Long id;
     private Long user_id;
     private String registration;
     private String model;
     private int year;
     private String color;
     private List<String> images;
+
+    private String status;
     public Long getUser_id() {
         return user_id;
     }
@@ -51,5 +55,20 @@ public class AutoRequestDTO {
 
     public void setColor(String color) {
         this.color = color;
+    }
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 }
