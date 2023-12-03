@@ -17,8 +17,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -56,10 +55,39 @@ public class carService {
     }
 
     public List<Map<String, Object>> getCarDataByUserId(long user_id) {
-        String sql = "SELECT * FROM car WHERE user_id = ?";
+        String sql = "SELECT\n" +
+                "    c.*,\n" +
+                "    STRING_AGG(CAST(m.id AS VARCHAR), ',') as media_ids,\n" +
+                "    STRING_AGG(m.url, ',') as image_urls\n" +
+                "FROM\n" +
+                "    car c\n" +
+                "LEFT JOIN\n" +
+                "    media m ON m.id_auto = c.id\n" +
+                "WHERE\n" +
+                "    user_id = ?\n" +
+                "GROUP BY\n" +
+                "    c.id;\n";
+
         try {
             List<Map<String, Object>> results = this.jdbcTemplate.queryForList(sql, user_id);
-            logger.debug("Out: " + results);
+
+            for (Map<String, Object> result : results) {
+                String mediaIds = (String) result.get("media_ids");
+                String imageUrls = (String) result.get("image_urls");
+                List<Map<String, String>> mediaDataList = new ArrayList<>();
+                List<String> mediaIdsList = Arrays.asList(mediaIds.split(","));
+                List<String> imageUrlsList = Arrays.asList(imageUrls.split(","));
+                for (int i = 0; i < mediaIdsList.size(); i++) {
+                    Map<String, String> mediaData = new HashMap<>();
+                    mediaData.put("id", mediaIdsList.get(i));
+                    mediaData.put("url", imageUrlsList.get(i));
+                    mediaDataList.add(mediaData);
+                }
+                result.put("media_data", mediaDataList);
+                result.remove("media_ids");
+                result.remove("image_urls");
+            }
+
             return results;
         } catch (EmptyResultDataAccessException e) {
             return null;
@@ -73,19 +101,19 @@ public class carService {
             throw new IllegalArgumentException("El ID del automóvil no es válido.");
         }
 
-        final StringBuilder sql = new StringBuilder();
-        sql.append("UPDATE car SET " +
-                "user_id=?," +
-                "registration=?," +
+        final StringBuilder updateCarSql = new StringBuilder();
+        updateCarSql.append("UPDATE car SET " +
+                "user_id=?, " +
+                "registration=?, " +
                 "model=?, " +
                 "year=?, " +
                 "color=?, " +
                 "status=? " +
                 "WHERE id=?;");
 
-        logger.debug("Executing:" + sql + " ; param: " + request);
+        logger.debug("Executing:" + updateCarSql + " ; param: " + request);
 
-        jdbcTemplate.update(sql.toString(), new PreparedStatementSetter() {
+        jdbcTemplate.update(updateCarSql.toString(), new PreparedStatementSetter() {
             @Override
             public void setValues(PreparedStatement ps) throws SQLException {
                 ps.setLong(1, request.getUser_id());
@@ -97,6 +125,16 @@ public class carService {
                 ps.setLong(7, request.getId());
             }
         });
+
+        // Actualiza las URLs de las imágenes si la lista no es nula o vacía
+        List<String> images = request.getImages();
+        if (images != null && !images.isEmpty()) {
+            for (String imageUrl : images) {
+                // Suponiendo que hay un campo id_media en la tabla media
+                jdbcTemplate.update("UPDATE media SET url = ? WHERE id_auto = ? AND url = ?", imageUrl, request.getId(), imageUrl);
+            }
+        }
     }
+
 
 }

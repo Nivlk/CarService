@@ -36,7 +36,7 @@ public class carController {
         }
     }
 
-    @GetMapping("/user/{user_id}")
+    @GetMapping("/car/{user_id}")
     public AppResponse listarCarPorUserId(@PathVariable long user_id) {
         AppResponse response = new AppResponse();
         try {
