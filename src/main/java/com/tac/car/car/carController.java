@@ -20,6 +20,8 @@ import java.util.Map;
 public class carController {
     @Autowired
     private carService autoService;
+    @Autowired
+    private reparationService repService;
     @Operation(summary = "Register car")
     @PostMapping("/guardar")
     public ResponseEntity<AppResponse> guardarAutoConImagenes(@RequestBody AutoRequestDTO autoRequestDTO) {
@@ -68,6 +70,43 @@ public class carController {
             response.setResponseCode("NOT_FOUND");
             response.setResponseMessage("Auto no actualizado");
         }
+        return response;
+    }
+
+    @Operation(summary = "Register repa")
+    @PostMapping("repa/guardar")
+    public ResponseEntity<AppResponse> guardarRepaConImagenes(@RequestBody RepaRequestDTO repaRequestDTO) {
+        AppResponse response = new AppResponse();
+        try {
+            repService.insertRep(repaRequestDTO);
+            response.setResponseCode("success");
+            response.setResponseMessage("Reparación y sus imágenes guardados exitosamente");
+            return new ResponseEntity<>(response, HttpStatus.CREATED);
+        } catch (Exception e) {
+            response.setResponseCode("error");
+            response.setResponseMessage("Error al guardar el auto: " + e.getMessage());
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/repa/{car_id}")
+    public AppResponse listarRepPorCarId(@PathVariable long car_id) {
+        AppResponse response = new AppResponse();
+        try {
+            List<Map<String, Object>> cars = repService.getRepDataByCarId(car_id);
+            if (cars != null) {
+                response.setData(cars);
+            } else {
+                response.setError(true);
+                response.setResponseCode("NOT_FOUND");
+                response.setResponseMessage("Repa no encontrado");
+            }
+        } catch (Exception e) {
+            response.setError(true);
+            response.setResponseCode("INTERNAL_SERVER_ERROR");
+            response.setResponseMessage("Error interno del servidor: " + e.getMessage());
+        }
+
         return response;
     }
 
